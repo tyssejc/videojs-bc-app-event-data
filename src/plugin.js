@@ -1,5 +1,6 @@
 import videojs from 'video.js';
 import {version as VERSION} from '../package.json';
+import window from 'global/window';
 
 // Default options for the plugin.
 const defaults = {};
@@ -24,6 +25,94 @@ const registerPlugin = videojs.registerPlugin || videojs.plugin;
  */
 const onPlayerReady = (player, options) => {
   player.addClass('vjs-bc-app-event-data');
+  let firststart = true;
+  let firstplay = true;
+
+  player.dataLayerPush = function(eventName, milestone) {
+
+    // set whatever attributes for every event push
+    const eventObject = {
+      event: eventName,
+      video: {
+        videoName: player.mediainfo.name,
+        secondsLength: player.duration(),
+        videoID: player.mediainfo.id,
+        videoPlayerType: 'brightcove'
+      }
+    };
+
+    // set milestone for Milestone Reached event
+    if (eventName === 'Video Milestone Reached') {
+      eventObject.video.milestone = milestone;
+    }
+
+    const appEventData = window.appEventData || [];
+
+    appEventData.push(eventObject);
+  };
+
+  // handle "loadedmetadata" bc player event
+  player.on('loadedmetadata', function() {
+
+    if (firststart) {
+      firststart = false;
+    }
+
+  });
+
+  // handle "play" bc player event
+  player.on('play', function(e) {
+
+    if (firstplay) {
+      firstplay = false;
+    }
+
+    // push to appEventData data layer
+    player.dataLayerPush('Video Started');
+
+  });
+
+  // handle "pause" bc player event
+  player.on('pause', function(e) {
+
+    // push to appEventData data layer
+    player.dataLayerPush('Video Paused');
+
+  });
+
+  // handle "timeupdate" bc player event
+  player.on('timeupdate', function(e) {
+
+    const _currentTime = player.currentTime();
+    const _duration = player.duration();
+    const _milestoneReached = { 25: false, 50: false, 75: false };
+
+    if ((_currentTime >= (_duration * 0.25) && _currentTime < (_duration * 0.49)) && !_milestoneReached[25]) {
+      _milestoneReached[25] = true;
+      player.dataLayerPush('Video Milestone Reached', '25');
+
+    } else if ((_currentTime >= (_duration * 0.50) && _currentTime < (_duration * 0.74)) && !_milestoneReached[50]) {
+
+      _milestoneReached[50] = true;
+      player.dataLayerPush('Video Milestone Reached', '50');
+
+    } else if ((_currentTime >= (_duration * 0.75) && _currentTime < (_duration * 0.99)) && !_milestoneReached[75]) {
+
+      _milestoneReached[75] = true;
+      player.dataLayerPush('Video Milestone Reached', '75');
+
+    }
+
+  });
+
+  // handle "ended"
+  player.on('ended', function(e) {
+
+    // push to appEventData data layer
+    player.dataLayerPush('Video Completed');
+
+  });
+
 };
 
 /**
