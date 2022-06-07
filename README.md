@@ -26,6 +26,8 @@ npm install --save videojs-bc-app-event-data
 
 To include videojs-bc-app-event-data on your website or web application, use any of the following methods.
 
+You can also include this as a Custom Plugin using the [Brightcove Player Manager]() UI.
+
 ### `<script>` Tag
 
 This is the simplest case. Get the script in whatever way you prefer and include the plugin _after_ you include [video.js][videojs], so that the `videojs` global is available.
